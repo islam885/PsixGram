@@ -1,0 +1,41 @@
+name: Run Standalone iOS Simulator
+
+on:
+  workflow_dispatch: # Запуск вручную по кнопке
+
+jobs:
+  launch-simulator:
+    runs-on: macos-latest
+
+    steps:
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app
+
+      - name: Boot Simulator and Capture Screen
+        run: |
+          # 1. Находим доступный iPhone 16
+          UDID=$(xcrun simctl list devices available | grep "iPhone 16" | head -n 1 | awk -F '[()]' '{print $2}')
+
+          if [ -z "$UDID" ]; then
+            RUNTIME=$(xcrun simctl list runtimes | grep -i "iOS" | tail -n 1 | awk '{print $NF}')
+            UDID=$(xcrun simctl create "Standalone iPhone" "com.apple.CoreSimulator.SimDeviceType.iPhone-16" "$RUNTIME")
+          fi
+
+          echo "Загрузка симулятора $UDID..."
+          xcrun simctl boot "$UDID"
+
+          # 2. Ждем полной загрузки графической оболочки (SpringBoard)
+          xcrun simctl bootstatus "$UDID" -b
+
+          # Небольшая пауза для прорисовки иконок
+          sleep 3
+
+          # 3. Делаем снимок экрана
+          mkdir -p output
+          xcrun simctl io "$UDID" screenshot output/homescreen.png
+
+      - name: Save Screenshot Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-homescreen
+          path: output/homescreen.png
