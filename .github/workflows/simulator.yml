@@ -39,3 +39,8 @@ jobs:
         with:
           name: ios-homescreen
           path: output/homescreen.png
+
+      - name: Setup Tmate Debug Session
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: true
